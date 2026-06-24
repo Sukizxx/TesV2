@@ -1,0 +1,9 @@
+services:
+  - type: web
+    name: cinematic-3d
+    runtime: node
+    buildCommand: npm install
+    startCommand: npm run start
+    envVars:
+      - key: NODE_ENV
+        value: production

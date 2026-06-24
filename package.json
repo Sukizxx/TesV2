@@ -3,8 +3,9 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "dev": "remotion studio",
-    "build": "echo 'Static site'"
+    "dev": "remotion studio --port 3000",
+    "build": "remotion render Cinematic3D out/video.mp4",
+    "start": "remotion studio --port 3000"
   },
   "dependencies": {
     "remotion": "4.0.482",
