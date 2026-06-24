@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "remotion studio",
-    "build": "echo 'Static site - no build needed'"
+    "build": "echo 'Static site'"
   },
   "dependencies": {
     "remotion": "4.0.482",
