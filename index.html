@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PHANTOM - Cinematic 3D</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #0a0a0f;
+            overflow: hidden;
+            font-family: 'Arial Black', 'Helvetica Neue', sans-serif;
+        }
+
+        #canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        .vignette {
+            background: radial-gradient(ellipse at center, transparent 0%, rgba(0,0,0,0.6) 100%);
+        }
+
+        .text-container {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            opacity: 0;
+            animation: fadeInText 1s ease-out forwards;
+        }
+
+        .text-container.hidden {
+            animation: fadeOutText 0.8s ease-in forwards;
+        }
+
+        .title {
+            font-size: clamp(60px, 12vw, 140px);
+            font-weight: 900;
+            color: #ffffff;
+            letter-spacing: 0.15em;
+            text-shadow: 0 0 60px rgba(233, 69, 96, 0.5), 0 0 120px rgba(74, 158, 255, 0.3);
+            margin-bottom: 20px;
+        }
+
+        .line {
+            width: 120px;
+            height: 2px;
+            background: linear-gradient(90deg, #e94560, #4a9eff);
+            margin: 0 auto 20px;
+            animation: expandLine 0.8s ease-out 0.3s forwards;
+            transform: scaleX(0);
+        }
+
+        .subtitle {
+            font-size: clamp(18px, 3vw, 32px);
+            font-weight: 300;
+            color: rgba(255, 255, 255, 0.7);
+            letter-spacing: 0.4em;
+            text-transform: uppercase;
+        }
+
+        @keyframes fadeInText {
+            from {
+                opacity: 0;
+                transform: translate(-50%, -40%);
+            }
+            to {
+                opacity: 1;
+                transform: translate(-50%, -50%);
+            }
+        }
+
+        @keyframes fadeOutText {
+            from {
+                opacity: 1;
+                transform: translate(-50%, -50%);
+            }
+            to {
+                opacity: 0;
+                transform: translate(-50%, -60%);
+            }
+        }
+
+        @keyframes expandLine {
+            from {
+                transform: scaleX(0);
+            }
+            to {
+                transform: scaleX(1);
+            }
+        }
+
+        .particles {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 5;
+        }
+
+        .particle {
+            position: absolute;
+            border-radius: 50%;
+            animation: float linear infinite;
+        }
+
+        @keyframes float {
+            from {
+                transform: translateY(100vh) rotate(0deg);
+                opacity: 0;
+            }
+            10% {
+                opacity: 0.6;
+            }
+            90% {
+                opacity: 0.6;
+            }
+            to {
+                transform: translateY(-100vh) rotate(720deg);
+                opacity: 0;
+            }
+        }
+
+        .stats {
+            position: fixed;
+            bottom: 40px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 60px;
+            z-index: 20;
+            opacity: 0;
+            animation: fadeInStats 1s ease-out 2s forwards;
+        }
+
+        .stat {
+            text-align: center;
+            opacity: 0;
+            animation: slideUp 0.6s ease-out forwards;
+        }
+
+        .stat:nth-child(1) { animation-delay: 2.2s; }
+        .stat:nth-child(2) { animation-delay: 2.4s; }
+        .stat:nth-child(3) { animation-delay: 2.6s; }
+
+        .stat-value {
+            font-size: clamp(24px, 4vw, 48px);
+            font-weight: 900;
+            color: #e94560;
+            text-shadow: 0 0 30px rgba(233, 69, 96, 0.5);
+        }
+
+        .stat-label {
+            font-size: clamp(10px, 1.5vw, 14px);
+            color: rgba(255, 255, 255, 0.5);
+            letter-spacing: 0.3em;
+            text-transform: uppercase;
+            margin-top: 5px;
+        }
+
+        @keyframes fadeInStats {
+            to { opacity: 1; }
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .controls {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 30;
+        }
+
+        .control-btn {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: white;
+            padding: 10px 20px;
+            margin: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            letter-spacing: 0.1em;
+            transition: all 0.3s ease;
+        }
+
+        .control-btn:hover {
+            background: rgba(233, 69, 96, 0.3);
+            border-color: #e94560;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="canvas"></canvas>
+
+    <div class="overlay vignette"></div>
+
+    <div class="particles" id="particles"></div>
+
+    <div class="text-container" id="mainText">
+        <div class="title">PHANTOM</div>
+        <div class="line"></div>
+        <div class="subtitle">REDEFINE LUXURY</div>
+    </div>
+
+    <div class="stats">
+        <div class="stat">
+            <div class="stat-value">0-100</div>
+            <div class="stat-label">2.9 Seconds</div>
+        </div>
+        <div class="stat">
+            <div class="stat-value">1200</div>
+            <div class="stat-label">Horsepower</div>
+        </div>
+        <div class="stat">
+            <div class="stat-value">∞</div>
+            <div class="stat-label">Possibilities</div>
+        </div>
+    </div>
+
+    <div class="controls">
+        <button class="control-btn" onclick="toggleRotation()">TOGGLE SPIN</button>
+        <button class="control-btn" onclick="changeColor()">CHANGE COLOR</button>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script>
+        // Scene setup
+        const canvas = document.getElementById('canvas');
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+        camera.position.set(0, 3, 8);
+        camera.lookAt(0, 0, 0);
+
+        // Car colors
+        const carColors = [
+            { body: 0x1a1a2e, accent: 0xe94560 },
+            { body: 0x0d1b2a, accent: 0x4a9eff },
+            { body: 0x1b1b2f, accent: 0x00d9ff },
+            { body: 0x162447, accent: 0xe43f5a },
+        ];
+        let currentColorIndex = 0;
+        let isRotating = true;
+
+        // Create car group
+        const carGroup = new THREE.Group();
+
+        // Car body - main
+        const bodyGeometry = new THREE.BoxGeometry(3.2, 0.6, 1.4);
+        const bodyMaterial = new THREE.MeshStandardMaterial({
+            color: carColors[currentColorIndex].body,
+            metalness: 0.9,
+            roughness: 0.1,
+        });
+        const body = new THREE.Mesh(bodyGeometry, bodyMaterial);
+        body.position.y = 0.4;
+        body.castShadow = true;
+        carGroup.add(body);
+
+        // Car cabin
+        const cabinGeometry = new THREE.BoxGeometry(1.8, 0.5, 1.3);
+        const cabinMaterial = new THREE.MeshStandardMaterial({
+            color: 0x16213e,
+            metalness: 0.95,
+            roughness: 0.05,
+        });
+        const cabin = new THREE.Mesh(cabinGeometry, cabinMaterial);
+        cabin.position.y = 0.85;
+        cabin.castShadow = true;
+        carGroup.add(cabin);
+
+        // Windshield
+        const windshieldGeometry = new THREE.BoxGeometry(0.8, 0.35, 1.25);
+        const windshieldMaterial = new THREE.MeshStandardMaterial({
+            color: 0x0f3460,
+            metalness: 0.8,
+            roughness: 0.15,
+            transparent: true,
+            opacity: 0.7,
+        });
+        const windshield = new THREE.Mesh(windshieldGeometry, windshieldMaterial);
+        windshield.position.set(-0.6, 0.7, 0);
+        windshield.castShadow = true;
+        carGroup.add(windshield);
+
+        // Wheels
+        const wheelPositions = [
+            [-1.1, 0.15, 0.7],
+            [-1.1, 0.15, -0.7],
+            [1.1, 0.15, 0.7],
+            [1.1, 0.15, -0.7],
+        ];
+
+        wheelPositions.forEach(pos => {
+            const wheelGroup = new THREE.Group();
+
+            const wheelGeometry = new THREE.CylinderGeometry(0.25, 0.25, 0.15, 24);
+            const wheelMaterial = new THREE.MeshStandardMaterial({
+                color: 0x0d0d0d,
+                metalness: 0.3,
+                roughness: 0.8,
+            });
+            const wheel = new THREE.Mesh(wheelGeometry, wheelMaterial);
+            wheel.rotation.x = Math.PI / 2;
+            wheel.castShadow = true;
+            wheelGroup.add(wheel);
+
+            const rimGeometry = new THREE.TorusGeometry(0.25, 0.05, 8, 24);
+            const rimMaterial = new THREE.MeshStandardMaterial({
+                color: 0xc0c0c0,
+                metalness: 0.95,
+                roughness: 0.05,
+            });
+            const rim = new THREE.Mesh(rimGeometry, rimMaterial);
+            rim.rotation.x = Math.PI / 2;
+            wheelGroup.add(rim);
+
+            wheelGroup.position.set(...pos);
+            carGroup.add(wheelGroup);
+        });
+
+        // Tail lights
+        const tailLightGeometry = new THREE.BoxGeometry(0.08, 0.15, 1.0);
+        const tailLightMaterial = new THREE.MeshStandardMaterial({
+            color: carColors[currentColorIndex].accent,
+            emissive: carColors[currentColorIndex].accent,
+            emissiveIntensity: 2,
+        });
+
+        const tailLight1 = new THREE.Mesh(tailLightGeometry, tailLightMaterial);
+        tailLight1.position.set(1.65, 0.45, 0);
+        carGroup.add(tailLight1);
+
+        const tailLight2 = new THREE.Mesh(tailLightGeometry, tailLightMaterial.clone());
+        tailLight2.position.set(-1.65, 0.45, 0);
+        carGroup.add(tailLight2);
+
+        // Headlights
+        const headlightGeometry = new THREE.SphereGeometry(0.08, 16, 16);
+        const headlightMaterial = new THREE.MeshStandardMaterial({
+            color: 0xffffff,
+            emissive: 0xffffff,
+            emissiveIntensity: 3,
+        });
+
+        const headlight1 = new THREE.Mesh(headlightGeometry, headlightMaterial);
+        headlight1.position.set(1.62, 0.4, 0.35);
+        carGroup.add(headlight1);
+
+        const headlight2 = new THREE.Mesh(headlightGeometry, headlightMaterial);
+        headlight2.position.set(1.62, 0.4, -0.35);
+        carGroup.add(headlight2);
+
+        scene.add(carGroup);
+
+        // Floor
+        const floorGeometry = new THREE.PlaneGeometry(50, 50);
+        const floorMaterial = new THREE.MeshStandardMaterial({
+            color: 0x0a0a0f,
+            metalness: 0.8,
+            roughness: 0.2,
+        });
+        const floor = new THREE.Mesh(floorGeometry, floorMaterial);
+        floor.rotation.x = -Math.PI / 2;
+        floor.position.y = -0.5;
+        floor.receiveShadow = true;
+        scene.add(floor);
+
+        // Ambient light
+        const ambientLight = new THREE.AmbientLight(0x1a1a3e, 0.15);
+        scene.add(ambientLight);
+
+        // Directional light (main)
+        const directionalLight = new THREE.DirectionalLight(0xe94560, 0.8);
+        directionalLight.position.set(5, 8, 5);
+        directionalLight.castShadow = true;
+        directionalLight.shadow.mapSize.width = 2048;
+        directionalLight.shadow.mapSize.height = 2048;
+        scene.add(directionalLight);
+
+        // Spot light
+        const spotLight = new THREE.SpotLight(0x4a9eff, 1.5);
+        spotLight.position.set(0, 10, 0);
+        spotLight.angle = 0.5;
+        spotLight.penumbra = 1;
+        spotLight.castShadow = true;
+        scene.add(spotLight);
+
+        // Point lights
+        const pointLight1 = new THREE.PointLight(0xff6b6b, 0.5);
+        pointLight1.position.set(-5, 3, -5);
+        scene.add(pointLight1);
+
+        const pointLight2 = new THREE.PointLight(0x4a9eff, 0.5);
+        pointLight2.position.set(5, 3, 5);
+        scene.add(pointLight2);
+
+        // Ring lights
+        for (let i = 0; i < 20; i++) {
+            const angle = (i / 20) * Math.PI * 2;
+            const radius = 8 + Math.sin(i * 1.5) * 2;
+            const ringLight = new THREE.Mesh(
+                new THREE.SphereGeometry(0.03, 8, 8),
+                new THREE.MeshStandardMaterial({
+                    color: 0xe94560,
+                    emissive: 0xe94560,
+                    emissiveIntensity: 0.5,
+                })
+            );
+            ringLight.position.set(
+                Math.cos(angle) * radius,
+                -0.3,
+                Math.sin(angle) * radius
+            );
+            scene.add(ringLight);
+        }
+
+        // Create particles
+        const particlesContainer = document.getElementById('particles');
+        for (let i = 0; i < 30; i++) {
+            const particle = document.createElement('div');
+            particle.className = 'particle';
+            particle.style.left = Math.random() * 100 + '%';
+            particle.style.width = (Math.random() * 3 + 1) + 'px';
+            particle.style.height = particle.style.width;
+            particle.style.backgroundColor = Math.random() > 0.5 ? '#e94560' : '#4a9eff';
+            particle.style.boxShadow = `0 0 ${parseInt(particle.style.width) * 3}px ${particle.style.backgroundColor}`;
+            particle.style.animationDuration = (Math.random() * 10 + 10) + 's';
+            particle.style.animationDelay = Math.random() * 10 + 's';
+            particlesContainer.appendChild(particle);
+        }
+
+        // Animation variables
+        let time = 0;
+        let cameraAngle = 0;
+        let textPhase = 0;
+        const textPhases = [
+            { title: 'PHANTOM', subtitle: 'REDEFINE LUXURY' },
+            { title: '0-100', subtitle: '2.9 SECONDS' },
+            { title: '1200', subtitle: 'HORSEPOWER' },
+            { title: 'EXPERIENCE', subtitle: 'THE FUTURE' },
+        ];
+
+        // Animation loop
+        function animate() {
+            requestAnimationFrame(animate);
+
+            time += 0.016;
+
+            // Rotate car
+            if (isRotating) {
+                carGroup.rotation.y += 0.008;
+            }
+
+            // Float animation
+            carGroup.position.y = Math.sin(time * 2) * 0.1;
+
+            // Camera movement
+            cameraAngle += 0.003;
+            camera.position.x = Math.sin(cameraAngle) * 2;
+            camera.position.y = 2.5 + Math.sin(time * 0.5) * 0.5;
+            camera.position.z = 7 + Math.sin(cameraAngle * 0.5) * 1;
+            camera.lookAt(0, 0.5, 0);
+
+            // Animate lights
+            directionalLight.intensity = 0.5 + Math.sin(time * 2) * 0.3;
+            spotLight.angle = 0.5 + Math.sin(time * 0.5) * 0.3;
+
+            // Text cycling
+            const cycleTime = time % 12;
+            const mainText = document.getElementById('mainText');
+
+            if (cycleTime > 2 && cycleTime < 5) {
+                if (textPhase !== 0) {
+                    textPhase = 0;
+                    updateText(textPhases[0]);
+                }
+            } else if (cycleTime > 6 && cycleTime < 9) {
+                if (textPhase !== 1) {
+                    textPhase = 1;
+                    updateText(textPhases[1]);
+                }
+            } else if (cycleTime > 10 || cycleTime < 1) {
+                if (textPhase !== 2) {
+                    textPhase = 2;
+                    updateText(textPhases[2]);
+                }
+            } else {
+                if (textPhase !== 3) {
+                    textPhase = 3;
+                    updateText(textPhases[3]);
+                }
+            }
+
+            renderer.render(scene, camera);
+        }
+
+        function updateText(phase) {
+            const mainText = document.getElementById('mainText');
+            mainText.classList.add('hidden');
+
+            setTimeout(() => {
+                mainText.querySelector('.title').textContent = phase.title;
+                mainText.querySelector('.subtitle').textContent = phase.subtitle;
+                mainText.classList.remove('hidden');
+            }, 800);
+        }
+
+        function toggleRotation() {
+            isRotating = !isRotating;
+        }
+
+        function changeColor() {
+            currentColorIndex = (currentColorIndex + 1) % carColors.length;
+            bodyMaterial.color.setHex(carColors[currentColorIndex].body);
+            tailLightMaterial.color.setHex(carColors[currentColorIndex].accent);
+            tailLightMaterial.emissive.setHex(carColors[currentColorIndex].accent);
+            tailLight2.material.color.setHex(carColors[currentColorIndex].accent);
+            tailLight2.material.emissive.setHex(carColors[currentColorIndex].accent);
+        }
+
+        // Handle resize
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        // Start animation
+        animate();
+    </script>
+</body>
+</html>

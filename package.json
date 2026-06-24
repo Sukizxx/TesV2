@@ -1,0 +1,19 @@
+{
+  "name": "cinematic-3d",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "remotion studio",
+    "build": "remotion render Cinematic3D out/video.mp4"
+  },
+  "dependencies": {
+    "remotion": "4.0.482",
+    "@remotion/cli": "4.0.482",
+    "react": "19.2.3",
+    "react-dom": "19.2.3"
+  },
+  "devDependencies": {
+    "typescript": "5.9.3",
+    "@types/react": "19.2.7"
+  }
+}
