@@ -47,3 +47,4 @@ The car can cycle through 4 color schemes:
 - Chrome/Edge (recommended)
 - Firefox
 - Safari
+# Updated
