@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "remotion studio",
-    "build": "remotion render Cinematic3D out/video.mp4"
+    "build": "echo 'Static site - no build needed'"
   },
   "dependencies": {
     "remotion": "4.0.482",
